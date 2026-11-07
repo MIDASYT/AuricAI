@@ -11,7 +11,7 @@ on:
       - '.github/workflows/visual-qa.yml'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   screenshots:
     runs-on: ubuntu-latest
@@ -58,6 +58,15 @@ jobs:
           }
           await browser.close();
           JS
+      - name: Preserve real screenshots inside the AuricAI project
+        shell: bash
+        run: |
+          mkdir -p qa/visual
+          cp screenshots/*.png qa/visual/
+          git config user.name 'auric-qa[bot]'
+          git config user.email 'auric-qa[bot]@users.noreply.github.com'
+          git add qa/visual/
+          git diff --cached --quiet || (git commit -m 'Record verified AuricAI mobile and desktop browser screenshots' && git push)
       - uses: actions/upload-artifact@v4
         with:
           name: AuricAI-official-site-screenshots
