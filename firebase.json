@@ -6,7 +6,14 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**",
-      "qa/**"
+      "qa/**",
+      "downloads/**",
+      "**/*.exe",
+      "**/*.apk",
+      "**/*.dll",
+      "**/*.zip",
+      "README.md",
+      ".github/**"
     ],
     "headers": [
       {
@@ -15,15 +22,6 @@
           {
             "key": "Cache-Control",
             "value": "no-store"
-          }
-        ]
-      },
-      {
-        "source": "/downloads/**",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=3600"
           }
         ]
       }
