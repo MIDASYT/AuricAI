@@ -13,6 +13,13 @@
     if(!response.ok)throw new Error('La información de esta versión aún no se ha publicado.');
     const data=await response.json();
     if(!/^\d+\.\d+\.\d+$/.test(data.version||''))throw new Error('Versión no válida.');
+    // Never offer incomplete/test builds as consumer downloads. A deployment
+    // manifest is promotable only after Firebase, shared Worker and permanent
+    // signing have been checked by the production release workflow.
+    if(data.channel!=='verified' || data.firebaseConfigured!==true || data.gatewayConfigured!==true) {
+      disable('La próxima versión oficial de AuricAI aún no está disponible.');
+      return;
+    }
     const platforms=['windows','android'];
     const verified=[];
     for(const platform of platforms){
