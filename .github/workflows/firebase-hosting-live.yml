@@ -1,0 +1,45 @@
+name: AuricAI — publish live website to shared Firebase project
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'style.css'
+      - 'app.js'
+      - 'assets/**'
+      - 'release.json'
+      - 'firebase.json'
+      - '.github/workflows/firebase-hosting-live.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_ID: ${{ vars.AURIC_FIREBASE_PROJECT_ID }}
+      HAS_HOSTING_CREDENTIALS: ${{ secrets.FIREBASE_HOSTING_SERVICE_ACCOUNT != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check deployment configuration without printing credentials
+        shell: bash
+        run: |
+          if [[ -z "$PROJECT_ID" || "$HAS_HOSTING_CREDENTIALS" != "true" ]]; then
+            echo "::notice::Shared Firebase Hosting not connected. Website source is committed but not published to web.app."
+          fi
+      - name: Deploy validated site to Firebase live channel
+        if: env.PROJECT_ID != '' && env.HAS_HOSTING_CREDENTIALS == 'true'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_HOSTING_SERVICE_ACCOUNT }}
+          projectId: ${{ env.PROJECT_ID }}
+          channelId: live
+      - name: Check actual Firebase site after publication
+        if: env.PROJECT_ID != '' && env.HAS_HOSTING_CREDENTIALS == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          html="$(mktemp)"
+          response="$(curl -L -sS --max-time 30 -o "$html" -w '%{http_code}' 'https://auric-ai.web.app/')"
+          test "$response" = 200
+          grep -qi 'AuricAI' "$html"
