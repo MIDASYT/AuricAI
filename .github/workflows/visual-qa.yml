@@ -52,7 +52,11 @@ jobs:
             const images=await page.locator('img').evaluateAll(nodes=>nodes.map(img=>({src:img.getAttribute('src'),loaded:img.complete&&img.naturalWidth>0})));
             if(images.some(i=>!i.loaded))throw Error('Missing asset: '+JSON.stringify(images.filter(i=>!i.loaded)));
             if(!await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth + 2)) throw Error('Horizontal overflow on '+item.name);
-            if(await page.locator('a[data-platform][aria-disabled="true"]').count()!==0)throw Error('Installers are not available: '+item.name);
+            const release=JSON.parse((await import('node:fs')).readFileSync('release.json','utf8'));
+            const production=release.channel==='verified' && release.firebaseConfigured===true && release.gatewayConfigured===true;
+            const disabled=await page.locator('a[data-platform][aria-disabled="true"]').count();
+            if(production && disabled)throw Error('Verified native downloads are missing: '+item.name);
+            if(!production && disabled!==2)throw Error('Experimental downloads must not be presented as stable: '+item.name);
             await page.screenshot({path:'screenshots/AuricAI-'+item.name+'-site.png',fullPage:true});
             await page.close();
           }
