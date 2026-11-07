@@ -27,13 +27,15 @@
       if(!info || typeof info.file!=='string' ||
          !new RegExp('^AuricAI[-_][A-Za-z0-9._-]+\\.'+ext+'$','i').test(info.file) ||
          !/^[a-f0-9]{64}$/i.test(info.sha256||''))throw new Error('Falta el instalador '+platform+'.');
-      const url=new URL('downloads/'+encodeURIComponent(info.file),location.href);
-      if(url.origin!==location.origin||!url.pathname.startsWith(new URL('./downloads/',location.href).pathname))
-        throw new Error('Descarga fuera del sitio oficial.');
-      const r=await fetch(url,{method:'HEAD',cache:'no-store'});
-      if(!r.ok)throw new Error('El instalador de '+platform+' aún no está disponible.');
-      if(r.headers.get('content-length') && Number(r.headers.get('content-length'))!==info.bytes)
-        throw new Error('El archivo de '+platform+' no coincide con la publicación.');
+      // Installer assets are distributed through the official GitHub Release,
+      // like Auric Turrets. Free-tier Firebase Hosting blocks EXE and APK uploads.
+      // No cross-origin HEAD request is needed: release CI verifies hash and bytes.
+      if(!Number.isSafeInteger(info.bytes) || info.bytes<=100_000)
+        throw new Error('El manifiesto no contiene un instalador válido.');
+      const url=new URL('https://github.com/MIDASYT/AuricAI/releases/download/v'
+        +encodeURIComponent(data.version)+'/'+encodeURIComponent(info.file));
+      if(url.hostname!=='github.com' || !url.pathname.startsWith('/MIDASYT/AuricAI/releases/download/'))
+        throw new Error('Descarga fuera de la publicación oficial.');
       verified.push({platform,url,info});
     }
     for(const {platform,url,info} of verified){
@@ -57,7 +59,7 @@
           const file=item[platform];
           if(typeof file!=='string'||!/^AuricAI[-_][A-Za-z0-9._-]+\.(exe|apk)$/i.test(file))continue;
           const a=document.createElement('a');
-          a.href='downloads/'+encodeURIComponent(file);
+          a.href='https://github.com/MIDASYT/AuricAI/releases/download/v'+encodeURIComponent(item.version)+'/'+encodeURIComponent(file);
           a.download=file;
           a.textContent='AuricAI '+item.version+' · '+(platform==='windows'?'Windows':'Android');
           list.append(a);
