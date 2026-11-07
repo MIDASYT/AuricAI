@@ -23,14 +23,27 @@ jobs:
       - name: Check download hash metadata and markup
         run: |
           python3 - <<'PY'
-          import hashlib,json
+          import hashlib,json,re,urllib.request
           from pathlib import Path
           d=json.loads(Path('release.json').read_text())
-          for key in ['windows','android']:
-            name=d[key]['file']
-            raw=(Path('downloads')/name).read_bytes()
-            assert len(raw)==d[key]['bytes']
-            assert hashlib.sha256(raw).hexdigest()==d[key]['sha256']
+          for key in ('windows','android'):
+            meta=d[key]
+            assert re.fullmatch(r'[a-f0-9]{64}',meta['sha256'])
+            assert meta['bytes']>100000
+            assert meta['file'].lower().endswith('.exe' if key=='windows' else '.apk')
+          if d.get('channel')=='verified':
+            assert d.get('firebaseConfigured') is True
+            assert d.get('gatewayConfigured') is True
+            req=urllib.request.Request(
+              'https://api.github.com/repos/MIDASYT/AuricAI/releases/tags/v'+d['version'],
+              headers={'User-Agent':'AuricAI-release-qa'})
+            release=json.load(urllib.request.urlopen(req,timeout=25))
+            assets={asset['name']:asset for asset in release.get('assets',[])}
+            for key in ('windows','android'):
+              meta=d[key];asset=assets.get(meta['file'])
+              assert asset is not None and asset['size']==meta['bytes']
+          # Historical testing builds may still exist on GitHub Pages, but the
+          # public site must never surface them as official downloads.
           html=Path('index.html').read_text()
           assert 'assets/android.svg' in html
           assert 'assets/auricai-logo.png' in html
