@@ -1,0 +1,65 @@
+name: AuricAI website - real desktop and Android browser QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'style.css'
+      - 'app.js'
+      - 'assets/**'
+      - 'release.json'
+      - '.github/workflows/visual-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check download hash metadata and markup
+        run: |
+          python3 - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          d=json.loads(Path('release.json').read_text())
+          for key in ['windows','android']:
+            name=d[key]['file']
+            raw=(Path('downloads')/name).read_bytes()
+            assert len(raw)==d[key]['bytes']
+            assert hashlib.sha256(raw).hexdigest()==d[key]['sha256']
+          html=Path('index.html').read_text()
+          assert 'assets/android.svg' in html
+          assert 'assets/auricai-logo.png' in html
+          assert 'id="instalacion"' in html
+          assert 'midasyt.github.io/AuricAI/auricai/' not in html
+          PY
+      - name: Capture real browser screenshots
+        run: |
+          npm install --no-save --no-audit --no-fund playwright
+          python3 -m http.server 8999 --directory . --bind 127.0.0.1 >/tmp/auricai-web.log 2>&1 &
+          mkdir -p screenshots
+          node --input-type=module <<'JS'
+          import {chromium} from 'playwright';
+          const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',args:['--no-sandbox','--disable-dev-shm-usage']});
+          for(const item of [{name:'desktop',width:1440,height:900,mobile:false},{name:'android',width:390,height:844,mobile:true}]){
+            const page=await browser.newPage({viewport:{width:item.width,height:item.height},isMobile:item.mobile,hasTouch:item.mobile,deviceScaleFactor:1});
+            await page.goto('http://127.0.0.1:8999/',{waitUntil:'networkidle'});
+            await page.locator('#downloadStatus').waitFor();
+            const images=await page.locator('img').evaluateAll(nodes=>nodes.map(img=>({src:img.getAttribute('src'),loaded:img.complete&&img.naturalWidth>0})));
+            if(images.some(i=>!i.loaded))throw Error('Missing asset: '+JSON.stringify(images.filter(i=>!i.loaded)));
+            if(!await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth + 2)) throw Error('Horizontal overflow on '+item.name);
+            if(await page.locator('a[data-platform][aria-disabled="true"]').count()!==0)throw Error('Installers are not available: '+item.name);
+            await page.screenshot({path:'screenshots/AuricAI-'+item.name+'-site.png',fullPage:true});
+            await page.close();
+          }
+          await browser.close();
+          JS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AuricAI-official-site-screenshots
+          path: screenshots/
+          retention-days: 45
