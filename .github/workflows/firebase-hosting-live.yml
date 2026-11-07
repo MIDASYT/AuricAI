@@ -1,15 +1,5 @@
 name: AuricAI — publish live website to shared Firebase project
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'index.html'
-      - 'style.css'
-      - 'app.js'
-      - 'assets/**'
-      - 'release.json'
-      - 'firebase.json'
-      - '.github/workflows/firebase-hosting-live.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,10 +15,24 @@ jobs:
         shell: bash
         run: |
           if [[ -z "$PROJECT_ID" || "$HAS_HOSTING_CREDENTIALS" != "true" ]]; then
-            echo "::notice::Shared Firebase Hosting not connected. Website source is committed but not published to web.app."
+            echo "::error::Shared Firebase Hosting is not configured; this cannot be marked deployed." >&2
+            exit 1
           fi
+      - name: Gate Hosting on verified AuricAI installers and live Firebase services
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          d=json.load(open('release.json'))
+          if d.get('channel')!='verified' or d.get('firebaseConfigured') is not True or d.get('gatewayConfigured') is not True:
+              raise SystemExit('AuricAI remains unverified. Production Hosting is blocked.')
+          for k in ('windows','android'):
+              a=d.get(k)
+              if not isinstance(a,dict) or len(a.get('sha256',''))!=64 or a.get('bytes',0)<100000:
+                  raise SystemExit('Missing verified '+k+' release')
+          PY
       - name: Deploy validated site to Firebase live channel
-        if: env.PROJECT_ID != '' && env.HAS_HOSTING_CREDENTIALS == 'true'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           firebaseServiceAccount: ${{ secrets.FIREBASE_HOSTING_SERVICE_ACCOUNT }}
