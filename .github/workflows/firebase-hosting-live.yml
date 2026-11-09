@@ -1,5 +1,14 @@
 name: AuricAI — publish live website to shared Firebase project
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'style.css'
+      - 'app.js'
+      - 'instalar.html'
+      - 'firebase.json'
+      - '.github/workflows/firebase-hosting-live.yml'
   workflow_dispatch:
 permissions:
   contents: read
