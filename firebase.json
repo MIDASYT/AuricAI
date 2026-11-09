@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "auric-ai",
+    "site": "auric-ai-web",
     "public": ".",
     "ignore": [
       "firebase.json",
@@ -13,7 +13,8 @@
       "**/*.dll",
       "**/*.zip",
       "README.md",
-      ".github/**"
+      ".github/**",
+      "archivo/**"
     ],
     "headers": [
       {
@@ -25,6 +26,7 @@
           }
         ]
       }
-    ]
+    ],
+    "cleanUrls": true
   }
 }
