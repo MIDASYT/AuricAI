@@ -31,17 +31,21 @@ jobs:
             assert re.fullmatch(r'[a-f0-9]{64}',meta['sha256'])
             assert meta['bytes']>100000
             assert meta['file'].lower().endswith('.exe' if key=='windows' else '.apk')
-          if d.get('channel')=='verified':
+          if d.get('channel')=='verified' and d.get('publicDownloads') is True:
             assert d.get('firebaseConfigured') is True
             assert d.get('gatewayConfigured') is True
             req=urllib.request.Request(
-              'https://api.github.com/repos/MIDASYT/AuricAI/releases/tags/v'+d['version'],
+              'https://api.github.com/repos/MIDASYT/AuricAI-Web/releases/tags/v'+d['version'],
               headers={'User-Agent':'AuricAI-release-qa'})
             release=json.load(urllib.request.urlopen(req,timeout=25))
             assets={asset['name']:asset for asset in release.get('assets',[])}
             for key in ('windows','android'):
               meta=d[key];asset=assets.get(meta['file'])
               assert asset is not None and asset['size']==meta['bytes']
+          assert d.get('downloadRepository')=='MIDASYT/AuricAI-Web'
+          for key in ('windows','android'):
+            expected='https://github.com/MIDASYT/AuricAI-Web/releases/download/v'+d['version']+'/'+d[key]['file']
+            assert d[key]['url']==expected
           # Historical testing builds may still exist on GitHub Pages, but the
           # public site must never surface them as official downloads.
           html=Path('index.html').read_text()
