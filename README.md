@@ -2,7 +2,7 @@
 
 **Repositorio privado de trabajo.** El sitio real se aloja en **Firebase Hosting**, no en GitHub Pages. Proyecto Firebase comunicado: `auric-apps-cloud`. Site ID: `auric-ai-web`. Dominio esperado: `https://auric-ai-web.web.app/` (verificar en Firebase después de desplegar).
 
-Fuente web: `./` y sus archivos `index.html`, `instalar.html`, `style.css`, `app.js`, `assets/`, `release.json`. La carpeta `archivo/` no se sirve públicamente y contiene material histórico. CI manual: `.github/workflows/firebase-hosting-live.yml`. No reactivar Pages.
+Fuente web: `./` y sus archivos `index.html`, `instalar.html`, `style.css`, `app.js`, `assets/`, `release.json`. La carpeta `archivo/` no se sirve públicamente y contiene material histórico. El despliegue real se realiza desde el workflow centralizado en `MIDASYT/AuricAIPrivado/.github/workflows/deploy-shared-firebase.yml`, que tiene acceso autorizado a las dos webs privadas y a las credenciales protegidas de Firebase. Un commit en este repositorio privado de trabajo no equivale a un despliegue: es necesario ejecutar el workflow central. No reactivar Pages.
 
 **Reglas de imagen y descarga:** tomar como referencia exacta la estructura y diseño de la web de AuricTurrets (solo lectura, jamás modificar). Portada con botones que van a `#descargar`; tarjetas por SO que ofrecen descarga directa solo si el EXE/APK está públicamente alojado, firmado/verificado, no mediante GitHub Releases privados; guía de instalación independiente; iconos oficiales; capturas REALES de las apps. No usar como capturas de app las capturas de navegador de la web. AuricCode y AuricAI deben ser coherentes. AuricQR permanece público en GitHub Pages.
 
